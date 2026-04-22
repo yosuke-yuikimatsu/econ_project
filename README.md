@@ -114,3 +114,16 @@ FETCH_WORKER_CONCURRENCY=64 PARSE_WORKER_CONCURRENCY=8 docker compose up -d --sc
 ```bash
 docker compose exec runner python scripts/progress.py
 ```
+
+## Troubleshooting
+
+### `sqlite3.OperationalError: attempt to write a readonly database`
+Если директория `data/` была создана в другом режиме прав, удалите/исправьте права и пересоберите:
+
+```bash
+rm -f data/state.db
+chmod -R u+rwX data
+
+docker compose down -v
+docker compose up -d --build
+```

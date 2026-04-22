@@ -18,11 +18,6 @@ COPY pyproject.toml /app/pyproject.toml
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Run workers as non-root to avoid Celery SecurityWarning.
-RUN groupadd -g 1000 appgroup && useradd -m -u 1000 -g appgroup appuser \
-    && mkdir -p /app/data/raw_html /app/data/parsed /app/data/logs \
-    && chown -R appuser:appgroup /app
-
-USER appuser
+RUN mkdir -p /app/data/raw_html /app/data/parsed /app/data/logs
 
 ENTRYPOINT ["/app/entrypoint.sh"]

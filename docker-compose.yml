@@ -12,6 +12,7 @@ services:
     command: celery -A app.core.celery_app.celery_app worker -Q bootstrap -n bootstrap@%h --concurrency=${BOOTSTRAP_WORKER_CONCURRENCY:-1} --loglevel=INFO
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - C_FORCE_ROOT=true
       - DATA_DIR=/app/data
       - DB_PATH=/app/data/state.db
       - RAW_HTML_DIR=/app/data/raw_html
@@ -31,6 +32,7 @@ services:
     command: celery -A app.core.celery_app.celery_app worker -Q fetch -n fetch@%h --concurrency=${FETCH_WORKER_CONCURRENCY:-32} --pool=threads --loglevel=INFO
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - C_FORCE_ROOT=true
       - DATA_DIR=/app/data
       - DB_PATH=/app/data/state.db
       - RAW_HTML_DIR=/app/data/raw_html
@@ -50,6 +52,7 @@ services:
     command: celery -A app.core.celery_app.celery_app worker -Q parse -n parse@%h --concurrency=${PARSE_WORKER_CONCURRENCY:-4} --pool=prefork --loglevel=INFO
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - C_FORCE_ROOT=true
       - DATA_DIR=/app/data
       - DB_PATH=/app/data/state.db
       - RAW_HTML_DIR=/app/data/raw_html
@@ -67,6 +70,7 @@ services:
     command: celery -A app.core.celery_app.celery_app worker -Q aggregate -n aggregate@%h --concurrency=${AGG_WORKER_CONCURRENCY:-1} --loglevel=INFO
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - C_FORCE_ROOT=true
       - DATA_DIR=/app/data
       - DB_PATH=/app/data/state.db
       - RAW_HTML_DIR=/app/data/raw_html
