@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  bootstrap-worker:
+    build: .
+    command: celery -A app.core.celery_app.celery_app worker -Q bootstrap -n bootstrap@%h --concurrency=${BOOTSTRAP_WORKER_CONCURRENCY:-1} --loglevel=INFO
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - C_FORCE_ROOT=true
+      - DATA_DIR=/app/data
+      - DB_PATH=/app/data/state.db
+      - RAW_HTML_DIR=/app/data/raw_html
+      - PARSED_DIR=/app/data/parsed
+      - PARSED_JSON_PATH=/app/data/parsed/all_banks_reports.json
+      - FETCH_CONCURRENCY=${FETCH_CONCURRENCY:-32}
+      - FETCH_PER_HOST_LIMIT=${FETCH_PER_HOST_LIMIT:-8}
+      - FULL_RUN=${FULL_RUN:-1}
+      - DEMO_OGRN=${DEMO_OGRN:-}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+
+  fetch-worker:
+    build: .
+    command: celery -A app.core.celery_app.celery_app worker -Q fetch -n fetch@%h --concurrency=${FETCH_WORKER_CONCURRENCY:-32} --pool=threads --loglevel=INFO
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - C_FORCE_ROOT=true
+      - DATA_DIR=/app/data
+      - DB_PATH=/app/data/state.db
+      - RAW_HTML_DIR=/app/data/raw_html
+      - PARSED_DIR=/app/data/parsed
+      - PARSED_JSON_PATH=/app/data/parsed/all_banks_reports.json
+      - FETCH_CONCURRENCY=${FETCH_CONCURRENCY:-32}
+      - FETCH_PER_HOST_LIMIT=${FETCH_PER_HOST_LIMIT:-8}
+      - FULL_RUN=${FULL_RUN:-1}
+      - DEMO_OGRN=${DEMO_OGRN:-}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+
+  parse-worker:
+    build: .
+    command: celery -A app.core.celery_app.celery_app worker -Q parse -n parse@%h --concurrency=${PARSE_WORKER_CONCURRENCY:-4} --pool=prefork --loglevel=INFO
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - C_FORCE_ROOT=true
+      - DATA_DIR=/app/data
+      - DB_PATH=/app/data/state.db
+      - RAW_HTML_DIR=/app/data/raw_html
+      - PARSED_DIR=/app/data/parsed
+      - PARSED_JSON_PATH=/app/data/parsed/all_banks_reports.json
+      - FULL_RUN=${FULL_RUN:-1}
+      - DEMO_OGRN=${DEMO_OGRN:-}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+
+  aggregate-worker:
+    build: .
+    command: celery -A app.core.celery_app.celery_app worker -Q aggregate -n aggregate@%h --concurrency=${AGG_WORKER_CONCURRENCY:-1} --loglevel=INFO
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - C_FORCE_ROOT=true
+      - DATA_DIR=/app/data
+      - DB_PATH=/app/data/state.db
+      - RAW_HTML_DIR=/app/data/raw_html
+      - PARSED_DIR=/app/data/parsed
+      - PARSED_JSON_PATH=/app/data/parsed/all_banks_reports.json
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+
+  runner:
+    build: .
+    command: sleep infinity
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATA_DIR=/app/data
+      - DB_PATH=/app/data/state.db
+      - RAW_HTML_DIR=/app/data/raw_html
+      - PARSED_DIR=/app/data/parsed
+      - PARSED_JSON_PATH=/app/data/parsed/all_banks_reports.json
+      - FULL_RUN=${FULL_RUN:-1}
+      - DEMO_OGRN=${DEMO_OGRN:-}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
