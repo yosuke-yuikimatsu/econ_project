@@ -5,7 +5,17 @@ from celery import Celery
 from app.core.config import settings
 
 
-celery_app = Celery("cbr_pipeline", broker=settings.redis_url, backend=settings.redis_url)
+celery_app = Celery(
+    "cbr_pipeline",
+    broker=settings.redis_url,
+    backend=settings.redis_url,
+    include=[
+        "app.tasks.bootstrap",
+        "app.tasks.fetch",
+        "app.tasks.parse",
+        "app.tasks.aggregate",
+    ],
+)
 
 celery_app.conf.update(
     task_acks_late=True,
@@ -18,6 +28,7 @@ celery_app.conf.update(
     accept_content=["json"],
     timezone="UTC",
     enable_utc=True,
+    broker_connection_retry_on_startup=True,
     task_default_queue="bootstrap",
     task_routes={
         "app.tasks.bootstrap.*": {"queue": "bootstrap"},
@@ -27,5 +38,3 @@ celery_app.conf.update(
     },
     task_default_retry_delay=3,
 )
-
-celery_app.autodiscover_tasks(["app.tasks"])
